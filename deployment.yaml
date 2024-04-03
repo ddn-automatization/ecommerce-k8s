@@ -1,0 +1,140 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: db-pv-volume
+  namespace: automatization
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/tmp/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-pv-claim
+  namespace: automatization
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: automatization
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      volumes:
+        - name: db-pv-storage
+          persistentVolumeClaim:
+            claimName: db-pv-claim
+      containers:
+        - name: mysql
+          image: mysql:latest
+          ports:
+            - containerPort: 3306
+              name: tcp
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "Password123!"
+            - name: MYSQL_DATABASE
+              value: "ecommerce"
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: db-pv-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: automatization
+spec:
+  selector:
+    app: mysql
+  ports:
+    - name: tcp
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-admin
+  namespace: automatization
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecommerce-admin
+  template:
+    metadata:
+      labels:
+        app: ecommerce-admin
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+        - name: ecommerce-admin
+          image: ddncr.azurecr.io/ecommerce-admin:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+              value: "pk_test_b3B0aW11bS1hbW9lYmEtMjcuY2xlcmsuYWNjb3VudHMuZGV2JA"
+            - name: CLERK_SECRET_KEY
+              value: "sk_test_Pnph4tdr83lu1zXwQleaH0DTutvnnFGgH9BdQ4gvT0"
+            - name: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+              value: "/sign-in"
+            - name: NEXT_PUBLIC_CLERK_SIGN_UP_URL
+              value: "/sign-up"
+            - name: NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
+              value: "/"
+            - name: NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+              value: "/"
+            - name: DATABASE_URL
+              value: "mysql://root:Password123!@mysql:3306/ecommerce?verifyServerCertificate=false"
+            - name: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+              value: "du47bn0tn"
+            - name: CLOUDINARY_PRESET_NAME
+              value: "aglrzldd"
+            - name: FRONTEND_STORE_URL
+              value: "http://ecommerce-store:3001"
+            - name: STRIPE_API_KEY
+              value: ""
+            - name: STRIPE_WEBHOOK_SECRET
+              value: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-admin
+  namespace: automatization
+spec:
+  selector:
+    app: ecommerce-admin
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+  type: LoadBalancer
