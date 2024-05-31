@@ -1,0 +1,35 @@
+name: ecommerce-admin
+namespace: ecommerce
+replicas: 1
+image: ddncr.azurecr.io/ecommerce-admin:latest
+containerPort: 3000
+service:
+  portname: http
+  port: 3000
+  targetPort: 3000
+
+env:
+  - name: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+    value: "pk_test_b3B0aW11bS1hbW9lYmEtMjcuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  - name: CLERK_SECRET_KEY
+    value: "sk_test_Pnph4tdr83lu1zXwQleaH0DTutvnnFGgH9BdQ4gvT0"
+  - name: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+    value: "/sign-in"
+  - name: NEXT_PUBLIC_CLERK_SIGN_UP_URL
+    value: "/sign-up"
+  - name: NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
+    value: "/"
+  - name: NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+    value: "/"
+  - name: DATABASE_URL
+    value: "mysql://root:Password123!@ecommerce-db:3306/ecommerce?verifyServerCertificate=false"
+  - name: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    value: "du47bn0tn"
+  - name: CLOUDINARY_PRESET_NAME
+    value: "rl1uzqmr"
+  - name: FRONTEND_STORE_URL
+    value: "http://ecommerce-store:3001"
+  - name: STRIPE_API_KEY
+    value: ""
+  - name: STRIPE_WEBHOOK_SECRET
+    value: ""

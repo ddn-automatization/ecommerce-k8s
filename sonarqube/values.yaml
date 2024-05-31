@@ -1,0 +1,145 @@
+deploymentType: "StatefulSet"
+
+replicaCount: 1
+
+deploymentStrategy: {}
+OpenShift:
+  enabled: false
+  createSCC: true
+
+edition: "community"
+
+image:
+  repository: sonarqube
+  tag: 10.3.0-{{ .Values.edition }}
+  pullPolicy: IfNotPresent
+
+
+nodeSelector: 
+  agentpool: infrapool01
+
+readinessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  failureThreshold: 6
+  timeoutSeconds: 1
+
+livenessProbe:
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  failureThreshold: 6
+  timeoutSeconds: 1
+
+startupProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 24
+  timeoutSeconds: 1
+
+
+initSysctl:
+  enabled: true
+  vmMaxMapCount: 524288
+  fsFileMax: 131072
+  nofile: 131072
+  nproc: 8192
+  securityContext:
+    privileged: true
+
+initFs:
+  enabled: true
+  securityContext:
+    privileged: false
+    runAsNonRoot: false
+    runAsUser: 0
+    runAsGroup: 0
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop: ["ALL"]
+      add: ["CHOWN"]
+
+
+plugins:
+  install: 
+    - "https://github.com/iSergio/sonarqube-community-branch-plugin/releases/download/1.16.1/sonarqube-community-branch-plugin-1.16.1-SNAPSHOT.jar"
+  noCheckCertificate: false
+
+jvmOpts: "-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-1.16.1-SNAPSHOT.jar=web"
+
+jvmCeOpts: "-javaagent:/opt/sonarqube/extensions/plugins/sonarqube-community-branch-plugin-1.16.1-SNAPSHOT.jar=ce"
+
+resources:
+  limits:
+    memory: 4Gi
+  requests:
+    cpu: 400m
+    memory: 1250Mi
+
+persistence:
+  enabled: false
+  
+  annotations: {}
+
+  storageClass:
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  uid: 1000
+  guid: 1000
+
+  volumes: []
+  mounts: []
+
+emptyDir: {}
+postgresql:
+  enabled: false
+  
+  postgresqlUsername:  "<db_username>@<db_server>"
+  postgresqlPassword: "db_password"
+  postgresqlDatabase: "db_name"
+  postgresqlServer: "<db_server>.postgres.database.azure.com"
+  # Specify the TCP port that PostgreSQL should use
+  service:
+    port: 5432
+  resources:
+    limits:
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    storageClass:
+  securityContext:
+    enabled: true
+    fsGroup: 1001
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop: ["ALL"]
+  volumePermissions:
+    enabled: false
+    securityContext:
+      runAsUser: 0
+  shmVolume:
+    chmod:
+      enabled: false
+  serviceAccount:
+    enabled: false
+
+podLabels: {}
+sonarqubeFolder: /opt/sonarqube
+
+tests:
+  image: ""
+  enabled: true
+  resources: {}
+
+terminationGracePeriodSeconds: 60
